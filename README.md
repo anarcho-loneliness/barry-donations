@@ -12,9 +12,9 @@ npm install barry-donations
 var BarryDonations = require('barry-donations');
 
 var options = {
-    username: "testuser",
-    password: "science",
-    version: "dansoverlay1"
+    username: "user",
+    password: "pass",
+    version: "ver"
 };
 var bd = new BarryDonations(options);
 
