@@ -1,0 +1,19 @@
+{
+  "name": "barry-donations",
+  "version": "0.0.0",
+  "description": "Events-driven API for Barry's Donation Tracker (http://don.barrycarlyon.co.uk/)",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/langeh/barry-donations.git"
+  },
+  "author": "Alex Van Camp <email@alexvan.camp>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/langeh/barry-donations/issues"
+  },
+  "homepage": "https://github.com/langeh/barry-donations",
+  "dependencies": {
+    "request": "^2.42.0"
+  }
+}
