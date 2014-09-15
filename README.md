@@ -3,7 +3,6 @@ An evented API wrapper for [Barry's Donation Tracker](http://don.barrycarlyon.co
 easier for Twitch broadcasters.
 
 ### Installation
-Install [node.js & npm](http://nodejs.org/), then install [bower](http://bower.io/), then run the following:
 ```
 npm install barry-donations
 ```
