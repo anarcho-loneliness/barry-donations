@@ -50,12 +50,19 @@ BarryDonations.prototype.init = function() {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
+                        if (data.data.hasOwnProperty(key)) {
+
+
             var latest = 0;
-            bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > latest) {
-                    latest = donation.utos;
+            // process lasttos from all transaction types to minimize data packet size
+            for (var key in bodyJSON.data) {
+                bodyJSON.data[key].forEach(function(donation) {
+                    if (donation.utos > latest) {
+                        latest = donation.utos;
+                    }
                 }
-            });
+            }
+
             self.options.lasttos = latest;
 
             self.emitInit(bodyJSON.data, latest);
