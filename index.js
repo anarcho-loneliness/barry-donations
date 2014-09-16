@@ -60,7 +60,7 @@ BarryDonations.prototype.init = function() {
                     if (donation.utos > latest) {
                         latest = donation.utos;
                     }
-                }
+                });
             }
 
             self.options.lasttos = latest;
@@ -101,7 +101,7 @@ BarryDonations.prototype.fetch = function(scope) {
                     if (donation.utos > latest) {
                         latest = donation.utos;
                     }
-                }
+                });
             }
             scope.options.lasttos = latest;
 
