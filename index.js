@@ -95,11 +95,14 @@ BarryDonations.prototype.fetch = function(scope) {
             }
 
             var latest = 0;
-            bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > latest) {
-                    latest = donation.utos;
+            // process lasttos from all transaction types to minimize data packet size
+            for (var key in bodyJSON.data) {
+                bodyJSON.data[key].forEach(function(donation) {
+                    if (donation.utos > latest) {
+                        latest = donation.utos;
+                    }
                 }
-            });
+            }
             scope.options.lasttos = latest;
 
             scope.emitNewDonations(bodyJSON.data, latest);
