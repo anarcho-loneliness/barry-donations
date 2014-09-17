@@ -50,12 +50,17 @@ BarryDonations.prototype.init = function() {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
-            bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > self.options.lasttos) {
-                    self.options.lasttos = donation.utos;
+            // process lasttos from all transaction types to minimize data packet size
+            for (var key in bodyJSON.data) {
+                if (bodyJSON.data.hasOwnProperty(key)) {
+                    bodyJSON.data[key].forEach(function(donation) {
+                        if (donation.utos > self.options.lasttos) {
+                            self.options.lasttos = donation.utos;
+                        }
+                    });
                 }
             });
-
+            
             self.emitInit(bodyJSON.data, self.options.lasttos);
 
             //kill any existing fetch timers
@@ -85,12 +90,17 @@ BarryDonations.prototype.fetch = function(scope) {
                 return;
             }
 
-            bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > scope.options.lasttos) {
-                    scope.options.lasttos = donation.utos;
+            // process lasttos from all transaction types to minimize data packet size
+            for (var key in bodyJSON.data) {
+                if (bodyJSON.data.hasOwnProperty(key)) {
+                    bodyJSON.data[key].forEach(function(donation) {
+                        if (donation.utos > scope.options.lasttos) {
+                            self.options.lasttos = donation.utos;
+                        }
+                    });
                 }
             });
-
+            
             scope.emitNewDonations(bodyJSON.data, scope.options.lasttos);
         } else {
             console.error("[BARRY-DONATIONS] Failed to fetch update: " + error);
