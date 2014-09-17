@@ -104,7 +104,7 @@ BarryDonations.prototype.fetch = function(scope) {
 
 BarryDonations.prototype.kill = function() {
     if(this._fetchtimer !== null) {
-        clearInterval(this.fetchtimer);
+        clearInterval(this._fetchtimer);
         this._fetchtimer = null;
     }
 };
