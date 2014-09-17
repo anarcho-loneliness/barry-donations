@@ -1,11 +1,14 @@
 var request = require('request'),
     util = require("util"),
-    EventEmitter = require("events").EventEmitter;
+    EventEmitter = require("events").EventEmitter,
+    pjson = require('./package.json');
+
 
 function BarryDonations(options) {
     EventEmitter.call(this);
 
     this.options = options;
+    this.options.version = 'bd-' + pjson.version
     this.options.lasttos = 0;
 
     this.validate();

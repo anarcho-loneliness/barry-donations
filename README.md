@@ -13,8 +13,7 @@ var BarryDonations = require('barry-donations');
 
 var options = {
     username: "user",
-    password: "pass",
-    version: "ver"
+    password: "pass"
 };
 var bd = new BarryDonations(options);
 
