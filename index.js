@@ -59,7 +59,7 @@ BarryDonations.prototype.init = function() {
                         }
                     });
                 }
-            });
+            }
             
             self.emitInit(bodyJSON.data, self.options.lasttos);
 
@@ -99,7 +99,7 @@ BarryDonations.prototype.fetch = function(scope) {
                         }
                     });
                 }
-            });
+            }
             
             scope.emitNewDonations(bodyJSON.data, scope.options.lasttos);
         } else {
