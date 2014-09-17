@@ -6,6 +6,7 @@ function BarryDonations(options) {
     EventEmitter.call(this);
 
     this.options = options;
+    this.options.lasttos = 0;
 
     this.validate();
 }
@@ -95,12 +96,12 @@ BarryDonations.prototype.fetch = function(scope) {
                 if (bodyJSON.data.hasOwnProperty(key)) {
                     bodyJSON.data[key].forEach(function(donation) {
                         if (donation.utos > scope.options.lasttos) {
-                            self.options.lasttos = donation.utos;
+                            scope.options.lasttos = donation.utos;
                         }
                     });
                 }
             }
-            
+
             scope.emitNewDonations(bodyJSON.data, scope.options.lasttos);
         } else {
             console.error("[BARRY-DONATIONS] Failed to fetch update: " + error);
