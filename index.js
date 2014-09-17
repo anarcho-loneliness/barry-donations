@@ -50,13 +50,11 @@ BarryDonations.prototype.init = function() {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
-            var latest = 0;
             bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > latest) {
-                    latest = donation.utos;
+                if (donation.utos > self.options.lasttos) {
+                    self.options.lasttos = donation.utos;
                 }
             });
-            self.options.lasttos = latest;
 
             self.emitInit(bodyJSON.data, latest);
 
@@ -87,15 +85,13 @@ BarryDonations.prototype.fetch = function(scope) {
                 return;
             }
 
-            var latest = 0;
             bodyJSON.data.Completed.forEach(function(donation) {
-                if (donation.utos > latest) {
-                    latest = donation.utos;
+                if (donation.utos > scope.options.lasttos) {
+                    scope.options.lasttos = donation.utos;
                 }
             });
-            scope.options.lasttos = latest;
 
-            scope.emitNewDonations(bodyJSON.data, latest);
+            scope.emitNewDonations(bodyJSON.data, scope.options.lasttos);
         } else {
             console.error("[BARRY-DONATIONS] Failed to fetch update: " + error);
         }
