@@ -53,7 +53,7 @@ BarryDonations.prototype.init = function() {
             var latest = 0;
             // process lasttos from all transaction types to minimize data packet size
             for (var key in bodyJSON.data) {
-                if (data.data.hasOwnProperty(key)) {
+                if (bodyJSON.data.hasOwnProperty(key)) {
                     bodyJSON.data[key].forEach(function(donation) {
                         if (donation.utos > latest) {
                             latest = donation.utos;
@@ -96,7 +96,7 @@ BarryDonations.prototype.fetch = function(scope) {
             var latest = 0;
             // process lasttos from all transaction types to minimize data packet size
             for (var key in bodyJSON.data) {
-                if (data.data.hasOwnProperty(key)) {
+                if (bodyJSON.data.hasOwnProperty(key)) {
                     bodyJSON.data[key].forEach(function(donation) {
                         if (donation.utos > latest) {
                             latest = donation.utos;
