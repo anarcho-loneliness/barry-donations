@@ -56,7 +56,7 @@ BarryDonations.prototype.init = function() {
                 }
             });
 
-            self.emitInit(bodyJSON.data, latest);
+            self.emitInit(bodyJSON.data, self.options.lasttos);
 
             //kill any existing fetch timers
             self.kill();
