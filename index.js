@@ -1,17 +1,52 @@
-var request = require('request'),
+var express = require('express'),
+    app = express(),
+    portscanner = require('portscanner'),
+    request = require('request'),
     util = require("util"),
     EventEmitter = require("events").EventEmitter,
-    pjson = require('./package.json');
-
+    config = require('./lib/config');
 
 function BarryDonations(options) {
     EventEmitter.call(this);
 
-    this.options = options;
-    this.options.version = 'bd-' + pjson.version
-    this.options.lasttos = 0;
+    this.options = {
+        username: options.username,
+        password: options.password,
+        hostname: options.hostname
+    };
 
-    this.validate();
+    this._version = 'asper';
+    this._endpoint = '';
+    this._pingtimer = null;
+
+    var self = this;
+
+    // Find the first available port. Asynchronously checks, so first port
+    // determined as available is returned.
+    portscanner.findAPortNotInUse(3000, 60000, '127.0.0.1', function(error, port) {
+        app.listen(port);
+
+        app.get('/bd', function(req, res) {
+            if (req.param('method') === 'ping') {
+                res.status(200).send('pong');
+            } else {
+                res.status(400).send('Bad request');
+            }
+        });
+
+        app.post('/bd', function(req, res) {
+            if (req.param('method') === 'donation') {
+                self.emitNewDonations(JSON.parse(req.body));
+            } else {
+                res.status(400).send('Bad request');
+            }
+        });
+
+        self._endpoint = 'http://' + self.options.hostname + ':' + port + '/bd';
+        console.log(self._endpoint);
+
+        self.validate();
+    });
 }
 
 util.inherits(BarryDonations, EventEmitter);
@@ -19,10 +54,11 @@ util.inherits(BarryDonations, EventEmitter);
 BarryDonations.prototype.validate = function() {
     var self = this;
 
-    var url = 'http://don.barrycarlyon.co.uk/api.php?method=validate' +
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=validate' +
         '&username=' + this.options.username +
         '&password=' + this.options.password +
-        '&version=' + this.options.version;
+        '&version=' + this._version +
+        '&endpoint=' + this._endpoint;
 
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -37,7 +73,7 @@ BarryDonations.prototype.validate = function() {
 
             self.init();
         } else {
-            console.error("[BARRY-DONATIONS] Failed to validate: " + error);
+            console.error("[BARRY-DONATIONS] Failed to validate (" + response.statusCode + "): " + error);
         }
     });
 };
@@ -45,10 +81,12 @@ BarryDonations.prototype.validate = function() {
 BarryDonations.prototype.init = function() {
     var self = this;
 
-    var url = 'http://don.barrycarlyon.co.uk/api.php?method=initial' +
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=initial' +
         '&username=' + this.options.username +
         '&password=' + this.options.password +
-        '&version=' + this.options.version;
+        '&version=' + this._version;
+
+    console.log(url);
 
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
@@ -67,55 +105,55 @@ BarryDonations.prototype.init = function() {
             
             self.emitInit(bodyJSON.data, self.options.lasttos);
 
-            //kill any existing fetch timers
-            self.kill();
+            //kill any existing ping timers
+            self._killtimer();
 
-            //fetch new data (delta) from the api every 30 seconds
-            self._fetchtimer = setInterval(self.fetch, 30000, self);
+            //fetch new data (delta) from the api every 300 seconds
+            self._pingtimer = setInterval(self.ping, 300 * 1000, self);
         } else {
             console.error("[BARRY-DONATIONS] Failed to get initial data: " + error);
         }
     });
 };
 
-BarryDonations.prototype.fetch = function(scope) {
-    var url = 'http://don.barrycarlyon.co.uk/api.php?method=update' +
+BarryDonations.prototype.ping = function(scope) {
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=ping' +
         '&username=' + scope.options.username +
         '&password=' + scope.options.password +
-        '&version=' + scope.options.version +
-        '&lasttos=' + scope.options.lasttos; //make sure we fetch this freshly from
+        '&version=' + scope._version;
+
+    request(url, function (error, response, body) {
+        if (error || response.statusCode != 200) {
+            console.error("[BARRY-DONATIONS] Failed to keepalive: " + error);
+        }
+    });
+};
+
+BarryDonations.prototype.logout = function() {
+    this._killtimer();
+
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=logout' +
+        '&username=' + this.options.username +
+        '&password=' + this.options.password +
+        '&version=' + this.options.version;
 
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
-            // this will be true if any donations have a newer timestamp than "lasttos"
-            if (bodyJSON.flag === false) {
-                return;
+            if (bodyJSON.status !== "ok") {
+                console.error("[BARRY-DONATIONS] Failed to logout, API returned status: " + bodyJSON.status);
             }
-
-            // process lasttos from all transaction types to minimize data packet size
-            for (var key in bodyJSON.data) {
-                if (bodyJSON.data.hasOwnProperty(key)) {
-                    bodyJSON.data[key].forEach(function(donation) {
-                        if (donation.utos > scope.options.lasttos) {
-                            scope.options.lasttos = donation.utos;
-                        }
-                    });
-                }
-            }
-
-            scope.emitNewDonations(bodyJSON.data, scope.options.lasttos);
         } else {
-            console.error("[BARRY-DONATIONS] Failed to fetch update: " + error);
+            console.error("[BARRY-DONATIONS] Failed to get logout: " + error);
         }
     });
 };
 
-BarryDonations.prototype.kill = function() {
-    if(this._fetchtimer !== null) {
-        clearInterval(this._fetchtimer);
-        this._fetchtimer = null;
+BarryDonations.prototype._killtimer = function() {
+    if(this._pingtimer !== null) {
+        clearInterval(this._pingtimer);
+        this._pingtimer = null;
     }
 };
 

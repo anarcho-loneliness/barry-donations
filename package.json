@@ -14,6 +14,9 @@
   },
   "homepage": "https://github.com/langeh/barry-donations",
   "dependencies": {
+    "express": "^4.9.5",
+    "extend": "^2.0.0",
+    "portscanner": "^1.0.0",
     "request": "^2.42.0"
   }
 }
