@@ -1,10 +1,12 @@
 var express = require('express'),
     app = express(),
+    bodyParser = require('body-parser'),
     portscanner = require('portscanner'),
     request = require('request'),
     util = require("util"),
-    EventEmitter = require("events").EventEmitter,
-    config = require('./lib/config');
+    EventEmitter = require("events").EventEmitter;
+
+app.use(bodyParser.json());
 
 function BarryDonations(options) {
     EventEmitter.call(this);
@@ -36,14 +38,13 @@ function BarryDonations(options) {
 
         app.post('/bd', function(req, res) {
             if (req.param('method') === 'donation') {
-                self.emitNewDonations(JSON.parse(req.body));
+                self.emitNewDonations(req.body.data);
             } else {
                 res.status(400).send('Bad request');
             }
         });
 
         self._endpoint = 'http://' + self.options.hostname + ':' + port + '/bd';
-        console.log(self._endpoint);
 
         self.validate();
     });
@@ -85,8 +86,6 @@ BarryDonations.prototype.init = function() {
         '&username=' + this.options.username +
         '&password=' + this.options.password +
         '&version=' + this._version;
-
-    console.log(url);
 
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
