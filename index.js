@@ -159,11 +159,32 @@ BarryDonations.prototype._killtimer = function() {
 };
 
 BarryDonations.prototype.emitInit = function(data, lasttos) {
-    this.emit("initialized", data, lasttos);
+    console.log(data);
+    this.emit('initialized', data, lasttos);
 };
 
 BarryDonations.prototype.emitNewDonations = function(data, lasttos) {
-    this.emit("newdonations", data, lasttos);
+    this.emit('newdonations', data, lasttos);
+};
+
+BarryDonations.prototype.reset = function(category) {
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
+        '&username=' + this.options.username +
+        '&password=' + this.options.password +
+        '&reset=' + category;
+
+    request(url, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+            var bodyJSON = JSON.parse(body);
+            console.log('[BARRY-DONATIONS] Successfully reset', category);
+
+            if (bodyJSON.status !== 'ok') {
+                console.error('[BARRY-DONATIONS] Failed to logout, API returned status:', bodyJSON.status);
+            }
+        } else {
+            console.error('[BARRY-DONATIONS] Failed to get logout:', error);
+        }
+    });
 };
 
 module.exports = BarryDonations;
