@@ -13,10 +13,14 @@ app.use(bodyParser.json());
 function BarryDonations(options) {
     EventEmitter.call(this);
 
+    // Reconnect defaults to true
+    options.reconnect = typeof options.reconnect !== 'undefined' ?  options.reconnect : true;
+
     this.options = {
         username: options.username,
         password: options.password,
-        hostname: options.hostname
+        hostname: options.hostname,
+        reconnect: options.reconnect
     };
 
     this._version = 'asper';
@@ -118,6 +122,7 @@ BarryDonations.prototype.init = function() {
 };
 
 BarryDonations.prototype.ping = function(scope) {
+    var self = this;
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=ping' +
         '&username=' + scope.options.username +
         '&password=' + scope.options.password +
@@ -126,6 +131,11 @@ BarryDonations.prototype.ping = function(scope) {
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
             console.error('[BARRY-DONATIONS] Failed to keepalive:', error);
+
+            // Will attempt to reconnect every ping cycle (5 minutes)
+            if (self.options.reconnect) {
+                self.init();
+            }
         }
     });
 };
