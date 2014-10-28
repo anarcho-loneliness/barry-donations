@@ -1,3 +1,5 @@
+// TODO: Detect if the server is down and attempt to re-validate on an increasing timer, like how Twitch chat reconnects
+
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
