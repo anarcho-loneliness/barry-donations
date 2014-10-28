@@ -67,8 +67,8 @@ BarryDonations.prototype.validate = function() {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
-            if (bodyJSON.status !== "ok") {
-                console.error("[BARRY-DONATIONS] Failed to validate, API returned status: " + bodyJSON.status);
+            if (bodyJSON.status !== 'ok') {
+                console.error('[BARRY-DONATIONS] Failed to validate, API returned status:', bodyJSON.status);
                 return;
             }
 
@@ -76,7 +76,7 @@ BarryDonations.prototype.validate = function() {
 
             self.init();
         } else {
-            console.error("[BARRY-DONATIONS] Failed to validate (" + response.statusCode + "): " + error);
+            console.error('[BARRY-DONATIONS] Failed to validate (" + response.statusCode + "):', error);
         }
     });
 };
@@ -112,7 +112,7 @@ BarryDonations.prototype.init = function() {
             //fetch new data (delta) from the api every 300 seconds
             self._pingtimer = setInterval(self.ping, 300 * 1000, self);
         } else {
-            console.error("[BARRY-DONATIONS] Failed to get initial data: " + error);
+            console.error('[BARRY-DONATIONS] Failed to get initial data:', error);
         }
     });
 };
@@ -125,7 +125,7 @@ BarryDonations.prototype.ping = function(scope) {
 
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            console.error("[BARRY-DONATIONS] Failed to keepalive: " + error);
+            console.error('[BARRY-DONATIONS] Failed to keepalive:', error);
         }
     });
 };
@@ -142,11 +142,11 @@ BarryDonations.prototype.logout = function() {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
 
-            if (bodyJSON.status !== "ok") {
-                console.error("[BARRY-DONATIONS] Failed to logout, API returned status: " + bodyJSON.status);
+            if (bodyJSON.status !== 'ok') {
+                console.error('[BARRY-DONATIONS] Failed to logout, API returned status:', bodyJSON.status);
             }
         } else {
-            console.error("[BARRY-DONATIONS] Failed to get logout: " + error);
+            console.error('[BARRY-DONATIONS] Failed to get logout:', error);
         }
     });
 };
