@@ -43,8 +43,23 @@ function BarryDonations(options) {
         });
 
         app.post('/bd', function(req, res) {
+            var data = req.body.data;
             if (req.param('method') === 'donation') {
-                self.emitNewDonations(req.body.data);
+                // process lasttos from all transaction types to minimize data packet size
+                for (var key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        // don't process the 'totals' field
+                        if (key === 'totals') continue;
+
+                        data[key].forEach(function(donation) {
+                            if (donation.utos > self.options.lasttos) {
+                                self.options.lasttos = donation.utos;
+                            }
+                        });
+                    }
+                }
+
+                self.emitNewDonations(data, self.options.lasttos);
             } else {
                 res.status(400).send('Bad request');
             }
@@ -100,6 +115,9 @@ BarryDonations.prototype.init = function() {
             // process lasttos from all transaction types to minimize data packet size
             for (var key in bodyJSON.data) {
                 if (bodyJSON.data.hasOwnProperty(key)) {
+                    // don't process the 'totals' field
+                    if (key === 'totals') continue;
+
                     bodyJSON.data[key].forEach(function(donation) {
                         if (donation.utos > self.options.lasttos) {
                             self.options.lasttos = donation.utos;
