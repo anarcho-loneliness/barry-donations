@@ -3,7 +3,7 @@
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
-    portscanner = require('portscanner'),
+    getPort = require('get-port'),
     request = require('request'),
     util = require("util"),
     EventEmitter = require("events").EventEmitter;
@@ -29,9 +29,7 @@ function BarryDonations(options) {
 
     var self = this;
 
-    // Find the first available port. Asynchronously checks, so first port
-    // determined as available is returned.
-    portscanner.findAPortNotInUse(3000, 60000, '127.0.0.1', function(error, port) {
+    getPort(function gotPort(err, port) {
         app.listen(port);
 
         app.get('/bd', function(req, res) {
@@ -125,7 +123,7 @@ BarryDonations.prototype.init = function() {
                     });
                 }
             }
-            
+
             self.emitInit(bodyJSON.data, self.options.lasttos);
 
             //kill any existing ping timers
