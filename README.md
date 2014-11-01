@@ -12,10 +12,12 @@ npm install barry-donations
 var BarryDonations = require('barry-donations');
 var events = require('events');
 
+// Barry's API pushes new donations to an endpoint located at 'hostname'
+// barry-donations takes care of making and listening to the endpoint, but you must supply the hostnome
 var options = {
     username: 'user',
     password: 'pass',
-    hostname: 'http://example.com'
+    hostname: 'http://yourserver.com'
 };
 var bd = new BarryDonations(options);
 
