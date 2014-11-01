@@ -185,7 +185,6 @@ BarryDonations.prototype._killtimer = function() {
 };
 
 BarryDonations.prototype.emitInit = function(data, lasttos) {
-    console.log(data);
     this.emit('initialized', data, lasttos);
 };
 
@@ -193,7 +192,7 @@ BarryDonations.prototype.emitNewDonations = function(data, lasttos) {
     this.emit('newdonations', data, lasttos);
 };
 
-BarryDonations.prototype.reset = function(category) {
+BarryDonations.prototype.resetPeriod = function(category) {
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
         '&username=' + this.options.username +
         '&password=' + this.options.password +
