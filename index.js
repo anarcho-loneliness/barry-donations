@@ -78,7 +78,7 @@ BarryDonations.prototype.validate = function() {
             self._reconnectInterval = 1;
             self.init();
         } else {
-            console.error('[BARRY-DONATIONS] Failed to validate (" + response.statusCode + "):', error);
+            console.error('[BARRY-DONATIONS] Failed to validate ("' + response.statusCode + '"):', error);
             self.reconnect();
         }
     });
@@ -186,7 +186,7 @@ BarryDonations.prototype.reconnect = function() {
 
     this._killtimer();
     this._reconnectInterval = this._reconnectInterval * 2;
-    setTimeout(this.validate().bind(this), this._reconnectInterval);
+    setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
     console.log('[BARRY-DONATIONS] Connection lost. Reconnecting in', this._reconnectInterval, 'seconds.');
 };
 
