@@ -12,15 +12,16 @@ npm install barry-donations
 var BarryDonations = require('barry-donations');
 
 var options = {
-    username: "user",
-    password: "pass"
+    username: 'user',
+    password: 'pass',
+    hostname: 'http://example.com'
 };
 var bd = new BarryDonations(options);
 
-bd.on('initialized', function (data, lasttos) {
+bd.on('initialized', function (data) {
     console.log("[init]" + data);
 });
-bd.on('newdonations', function (data, lasttos) {
+bd.on('newdonations', function (data) {
     console.log("[newdonations] " + data);
 });
 ```
