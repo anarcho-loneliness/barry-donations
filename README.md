@@ -10,6 +10,7 @@ npm install barry-donations
 ### Usage
 ```javascript
 var BarryDonations = require('barry-donations');
+var events = require('events');
 
 var options = {
     username: 'user',
