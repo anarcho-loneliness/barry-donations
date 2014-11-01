@@ -43,21 +43,7 @@ function BarryDonations(options) {
         app.post('/bd', function(req, res) {
             var data = req.body.data;
             if (req.param('method') === 'donation') {
-                // process lasttos from all transaction types to minimize data packet size
-                for (var key in data) {
-                    if (data.hasOwnProperty(key)) {
-                        // don't process the 'totals' field
-                        if (key === 'totals') continue;
-
-                        data[key].forEach(function(donation) {
-                            if (donation.utos > self.options.lasttos) {
-                                self.options.lasttos = donation.utos;
-                            }
-                        });
-                    }
-                }
-
-                self.emitNewDonations(data, self.options.lasttos);
+                self.emitNewDonations(data);
             } else {
                 res.status(400).send('Bad request');
             }
@@ -109,22 +95,7 @@ BarryDonations.prototype.init = function() {
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
-
-            // process lasttos from all transaction types to minimize data packet size
-            for (var key in bodyJSON.data) {
-                if (bodyJSON.data.hasOwnProperty(key)) {
-                    // don't process the 'totals' field
-                    if (key === 'totals') continue;
-
-                    bodyJSON.data[key].forEach(function(donation) {
-                        if (donation.utos > self.options.lasttos) {
-                            self.options.lasttos = donation.utos;
-                        }
-                    });
-                }
-            }
-
-            self.emitInit(bodyJSON.data, self.options.lasttos);
+            self.emitInit(bodyJSON.data);
 
             //kill any existing ping timers
             self._killtimer();
@@ -184,15 +155,15 @@ BarryDonations.prototype._killtimer = function() {
     }
 };
 
-BarryDonations.prototype.emitInit = function(data, lasttos) {
-    this.emit('initialized', data, lasttos);
+BarryDonations.prototype.emitInit = function(data) {
+    this.emit('initialized', data);
 };
 
-BarryDonations.prototype.emitNewDonations = function(data, lasttos) {
-    this.emit('newdonations', data, lasttos);
+BarryDonations.prototype.emitNewDonations = function(data) {
+    this.emit('newdonations', data);
 };
 
-BarryDonations.prototype.resetPeriod = function(category) {
+BarryDonations.prototype.resetCategory = function(category) {
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
         '&username=' + this.options.username +
         '&password=' + this.options.password +
