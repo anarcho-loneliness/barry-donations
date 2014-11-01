@@ -187,6 +187,7 @@ BarryDonations.prototype.reconnect = function() {
     this._killtimer();
     this._reconnectInterval = this._reconnectInterval * 2;
     setTimeout(this.validate().bind(this), this._reconnectInterval);
+    console.log('[BARRY-DONATIONS] Connection lost. Reconnecting in', this._reconnectInterval, 'seconds.');
 };
 
 module.exports = BarryDonations;
