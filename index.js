@@ -1,5 +1,3 @@
-// TODO: Detect if the server is down and attempt to re-validate on an increasing timer, like how Twitch chat reconnects
-
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
@@ -26,6 +24,7 @@ function BarryDonations(options) {
     this._version = 'asper';
     this._endpoint = '';
     this._pingtimer = null;
+    this._reconnectInterval = 1;
 
     var self = this;
 
@@ -76,10 +75,11 @@ BarryDonations.prototype.validate = function() {
             }
 
             self.settings = bodyJSON.settings;
-
+            self._reconnectInterval = 1;
             self.init();
         } else {
             console.error('[BARRY-DONATIONS] Failed to validate (" + response.statusCode + "):', error);
+            self.reconnect();
         }
     });
 };
@@ -101,28 +101,24 @@ BarryDonations.prototype.init = function() {
             self._killtimer();
 
             //fetch new data (delta) from the api every 300 seconds
-            self._pingtimer = setInterval(self.ping, 300 * 1000, self);
+            self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
         } else {
             console.error('[BARRY-DONATIONS] Failed to get initial data:', error);
         }
     });
 };
 
-BarryDonations.prototype.ping = function(scope) {
+BarryDonations.prototype.ping = function() {
     var self = this;
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=ping' +
-        '&username=' + scope.options.username +
-        '&password=' + scope.options.password +
-        '&version=' + scope._version;
+        '&username=' + this.options.username +
+        '&password=' + this.options.password +
+        '&version=' + this._version;
 
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
             console.error('[BARRY-DONATIONS] Failed to keepalive:', error);
-
-            // Will attempt to reconnect every ping cycle (5 minutes)
-            if (self.options.reconnect) {
-                self.init();
-            }
+            self.reconnect();
         }
     });
 };
@@ -181,6 +177,16 @@ BarryDonations.prototype.resetCategory = function(category) {
             console.error('[BARRY-DONATIONS] Failed to get logout:', error);
         }
     });
+};
+
+BarryDonations.prototype.reconnect = function() {
+    if (this.options.reconnect === false) {
+        return;
+    }
+
+    this._killtimer();
+    this._reconnectInterval = this._reconnectInterval * 2;
+    setTimeout(this.validate().bind(this), this._reconnectInterval);
 };
 
 module.exports = BarryDonations;
