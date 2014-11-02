@@ -13,7 +13,6 @@ function BarryDonations(options) {
     // Check if a BarryDonations object with this username has already been made
     // If it has, returns that existing object instead of making a new one
     var cacheIndex = cache.find(options.username);
-    console.log(cacheIndex);
     if (cacheIndex >= 0) {
         return cache.get(cacheIndex);
     }
