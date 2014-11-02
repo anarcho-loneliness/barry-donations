@@ -3,12 +3,21 @@ var express = require('express'),
     bodyParser = require('body-parser'),
     getPort = require('get-port'),
     request = require('request'),
-    util = require("util"),
-    EventEmitter = require("events").EventEmitter;
+    util = require('util'),
+    cache = require('./lib/cache'),
+    EventEmitter = require('events').EventEmitter;
 
 app.use(bodyParser.json());
 
 function BarryDonations(options) {
+    // Check if a BarryDonations object with this username has already been made
+    // If it has, returns that existing object instead of making a new one
+    var cacheIndex = cache.find(options.username);
+    console.log(cacheIndex);
+    if (cacheIndex >= 0) {
+        return cache.get(cacheIndex);
+    }
+
     EventEmitter.call(this);
 
     // Reconnect defaults to true
@@ -27,6 +36,7 @@ function BarryDonations(options) {
     this._reconnectInterval = 1;
 
     var self = this;
+    cache.add(this);
 
     getPort(function gotPort(err, port) {
         app.listen(port);
@@ -137,6 +147,8 @@ BarryDonations.prototype.logout = function() {
 
             if (bodyJSON.status !== 'ok') {
                 console.error('[BARRY-DONATIONS] Failed to logout, API returned status:', bodyJSON.status);
+            } else {
+                cache.remove(this.options.uesrname);
             }
         } else {
             console.error('[BARRY-DONATIONS] Failed to get logout:', error);
