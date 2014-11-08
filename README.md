@@ -17,7 +17,7 @@ var events = require('events');
 var options = {
     username: 'user',
     password: 'pass',
-    hostname: 'http://yourserver.com'
+    hostname: 'yourserver.com' //don't add the "http://", https currently unsupported
 };
 var bd = new BarryDonations(options);
 
