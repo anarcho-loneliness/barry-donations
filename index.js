@@ -5,7 +5,8 @@ var express = require('express'),
     request = require('request'),
     util = require('util'),
     cache = require('./lib/cache'),
-    EventEmitter = require('events').EventEmitter;
+    EventEmitter = require('events').EventEmitter,
+    pjson = require('./package.json');
 
 app.use(bodyParser.json());
 
@@ -29,7 +30,7 @@ function BarryDonations(options) {
         reconnect: options.reconnect
     };
 
-    this._version = 'asper';
+    this._version = 'bd-' + pjson.version;
     this._endpoint = '';
     this._pingtimer = null;
     this._reconnectInterval = 1;
