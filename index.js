@@ -180,13 +180,14 @@ BarryDonations.prototype.resetCategory = function(category) {
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
-            console.log('[BARRY-DONATIONS] Successfully reset', category);
 
             if (bodyJSON.status !== 'ok') {
-                console.error('[BARRY-DONATIONS] Failed to logout, API returned status:', bodyJSON.status);
+                console.error("[BARRY-DONATIONS] Failed to reset %s:", category, bodyJSON.status);
+            } else {
+                console.log('[BARRY-DONATIONS] Successfully reset', category);
             }
         } else {
-            console.error('[BARRY-DONATIONS] Failed to get logout:', error);
+            console.error("[BARRY-DONATIONS] Failed to reset", category);
         }
     });
 };
