@@ -198,7 +198,13 @@ BarryDonations.prototype.reconnect = function() {
     }
 
     this._killtimer();
-    this._reconnectInterval = this._reconnectInterval * 2;
+
+    if (this._reconnectInterval >= 600) {
+        this._reconnectInterval = 600;
+    } else {
+        this._reconnectInterval = this._reconnectInterval * 2;
+    }
+
     setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
     console.log('[BARRY-DONATIONS] Connection lost. Reconnecting in', this._reconnectInterval, 'seconds.');
 };
