@@ -10,16 +10,33 @@ npm install barry-donations
 ### Usage
 ```javascript
 var BarryDonations = require('barry-donations');
-var events = require('events');
 
 // Barry's API pushes new donations to an endpoint located at 'hostname'
-// barry-donations takes care of making and listening to the endpoint, but you must supply the hostnome
+// barry-donations takes care of making and listening to the endpoint, but you must supply the hostname
 var options = {
     username: 'user',
     password: 'pass',
-    hostname: 'yourserver.com' //don't add the "http://", https currently unsupported
+    hostname: 'yourserver.com', // don't add "http://", https currently unsupported
+    port: 1234,                 // optional, will use a random port if not supplied
+    reconnect: true             // optional, attempt to automatically reconnect when disconnected. defaults to true.
 };
 var bd = new BarryDonations(options);
+
+bd.on('connected', function (e) {
+    console.log('connected');
+});
+
+bd.on('connectfail', function (e) {
+    console.error(e);
+});
+
+bd.on('error', function (e) {
+    console.error(e);
+});
+
+bd.on('disconnected', function (e) {
+    console.error(e);
+});
 
 bd.on('initialized', function (data) {
     console.log("[init]" + data);

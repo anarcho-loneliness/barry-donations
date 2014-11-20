@@ -4,9 +4,13 @@ var express = require('express'),
     getPort = require('get-port'),
     request = require('request'),
     util = require('util'),
-    cache = require('./lib/cache'),
+    Q = require('q'),
     EventEmitter = require('events').EventEmitter,
+    cache = require('./lib/cache'),
     pjson = require('./package.json');
+
+var MAX_RECONNECT_INTERVAL = 600;
+var INITIAL_RECONNECT_INTERVAL = 2;
 
 app.use(bodyParser.json());
 
@@ -21,24 +25,35 @@ function BarryDonations(options) {
     EventEmitter.call(this);
 
     // Reconnect defaults to true
-    options.reconnect = typeof options.reconnect !== 'undefined' ?  options.reconnect : true;
+    options.reconnect = (typeof(options.reconnect) === 'undefined' ?  true : options.reconnect);
 
     this.options = {
         username: options.username,
         password: options.password,
         hostname: options.hostname,
+        port: options.port,
         reconnect: options.reconnect
     };
 
     this._version = 'bd-' + pjson.version;
     this._endpoint = '';
     this._pingtimer = null;
-    this._reconnectInterval = 1;
+    this._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
 
     var self = this;
     cache.add(this);
 
-    getPort(function gotPort(err, port) {
+    // If a port was provided, use that
+    // Otherwise, find a random open one
+    if (this.port) {
+        gotPort(this.port);
+    } else {
+        getPort(function(err, port) {
+            gotPort(port);
+        });
+    }
+
+    function gotPort(port) {
         app.listen(port);
 
         app.get('/bd', function(req, res) {
@@ -52,7 +67,7 @@ function BarryDonations(options) {
         app.post('/bd', function(req, res) {
             var data = req.body.data;
             if (req.param('method') === 'donation') {
-                self.emitNewDonations(data);
+                self.emit('newdonations', data);
             } else {
                 res.status(400).send('Bad request');
             }
@@ -61,7 +76,7 @@ function BarryDonations(options) {
         self._endpoint = 'http://' + self.options.hostname + ':' + port + '/bd';
 
         self.validate();
-    });
+    }
 }
 
 util.inherits(BarryDonations, EventEmitter);
@@ -80,15 +95,16 @@ BarryDonations.prototype.validate = function() {
             var bodyJSON = JSON.parse(body);
 
             if (bodyJSON.status !== 'ok') {
-                console.error('[BARRY-DONATIONS] Failed to validate, API returned status:', bodyJSON.status);
+                self.emit('connectfail', new Error(util.format("Failed to validate, API returned status:", bodyJSON.status)));
                 return;
             }
 
             self.settings = bodyJSON.settings;
-            self._reconnectInterval = 1;
+            self._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
+            self.emit('connected');
             self.init();
         } else {
-            console.error('[BARRY-DONATIONS] Failed to validate ("' + response.statusCode + '"):', error);
+            self.emit('connectfail', new Error(util.format("Failed to validate (%d):", response.statusCode, error)));
             self.reconnect();
         }
     });
@@ -105,7 +121,7 @@ BarryDonations.prototype.init = function() {
     request(url, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             var bodyJSON = JSON.parse(body);
-            self.emitInit(bodyJSON.data);
+            self.emit('initialized', bodyJSON.data);
 
             //kill any existing ping timers
             self._killtimer();
@@ -113,7 +129,8 @@ BarryDonations.prototype.init = function() {
             //fetch new data (delta) from the api every 300 seconds
             self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
         } else {
-            console.error('[BARRY-DONATIONS] Failed to get initial data:', error);
+            self.emit('connectfail', new Error('Failed to get initial data:', error));
+            self.reconnect();
         }
     });
 };
@@ -127,14 +144,50 @@ BarryDonations.prototype.ping = function() {
 
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            console.error('[BARRY-DONATIONS] Failed to keepalive:', error);
+            self.emit('disconnected', new Error('Failed to keepalive:', error));
             self.reconnect();
         }
     });
 };
 
+BarryDonations.prototype.reconnect = function() {
+    if (this.options.reconnect === false)
+        return;
+
+    this._killtimer();
+
+    // To avoid hammering Barry's API, each reconnect attempt will wait twice as long as the previous one
+    // up to a maximum duration of MAX_RECONNECT_INTERVAL (10 minutes)
+    this._reconnectInterval >= MAX_RECONNECT_INTERVAL
+        ? this._reconnectInterval = MAX_RECONNECT_INTERVAL
+        : this._reconnectInterval = this._reconnectInterval * 2;
+
+    setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
+};
+
+BarryDonations.prototype.resetCategory = function(category) {
+    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
+        '&username=' + this.options.username +
+        '&password=' + this.options.password +
+        '&reset=' + category;
+
+    var deferred = Q.defer();
+    request(url, function (error, response, body) {
+        if (!error && response.statusCode === 200) {
+            var bodyJSON = JSON.parse(body);
+            bodyJSON.status === 'ok'
+                ? deferred.resolve(category)
+                : deferred.reject(new Error('Failed to reset %s:', category, bodyJSON.status));
+        } else {
+            deferred.reject(new Error('Failed to reset', category));
+        }
+    });
+    return deferred.promise;
+};
+
 BarryDonations.prototype.logout = function() {
     this._killtimer();
+    var self = this;
 
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=logout' +
         '&username=' + this.options.username +
@@ -146,12 +199,12 @@ BarryDonations.prototype.logout = function() {
             var bodyJSON = JSON.parse(body);
 
             if (bodyJSON.status !== 'ok') {
-                console.error('[BARRY-DONATIONS] Failed to logout, API returned status:', bodyJSON.status);
+                self.emit('error', new Error('Failed to logout, API returned status:', bodyJSON.status));
             } else {
-                cache.remove(this.options.uesrname);
+                cache.remove(self.options.uesrname);
             }
         } else {
-            console.error('[BARRY-DONATIONS] Failed to get logout:', error);
+            self.emit('error', new Error('Failed to logout:', error));
         }
     });
 };
@@ -161,52 +214,6 @@ BarryDonations.prototype._killtimer = function() {
         clearInterval(this._pingtimer);
         this._pingtimer = null;
     }
-};
-
-BarryDonations.prototype.emitInit = function(data) {
-    this.emit('initialized', data);
-};
-
-BarryDonations.prototype.emitNewDonations = function(data) {
-    this.emit('newdonations', data);
-};
-
-BarryDonations.prototype.resetCategory = function(category) {
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&reset=' + category;
-
-    request(url, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var bodyJSON = JSON.parse(body);
-
-            if (bodyJSON.status !== 'ok') {
-                console.error("[BARRY-DONATIONS] Failed to reset %s:", category, bodyJSON.status);
-            } else {
-                console.log('[BARRY-DONATIONS] Successfully reset', category);
-            }
-        } else {
-            console.error("[BARRY-DONATIONS] Failed to reset", category);
-        }
-    });
-};
-
-BarryDonations.prototype.reconnect = function() {
-    if (this.options.reconnect === false) {
-        return;
-    }
-
-    this._killtimer();
-
-    if (this._reconnectInterval >= 600) {
-        this._reconnectInterval = 600;
-    } else {
-        this._reconnectInterval = this._reconnectInterval * 2;
-    }
-
-    setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
-    console.log('[BARRY-DONATIONS] Connection lost. Reconnecting in', this._reconnectInterval, 'seconds.');
 };
 
 module.exports = BarryDonations;
