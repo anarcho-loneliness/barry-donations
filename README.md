@@ -38,6 +38,10 @@ bd.on('disconnected', function (e) {
     console.error(e);
 });
 
+bd.on('reconnecting', function (timerDuration) {
+    console.log('reconnecting in %d seconds', timerDuration);
+});
+
 bd.on('initialized', function (data) {
     console.log("[init]" + data);
 });

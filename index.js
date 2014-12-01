@@ -158,10 +158,11 @@ BarryDonations.prototype.reconnect = function() {
 
     // To avoid hammering Barry's API, each reconnect attempt will wait twice as long as the previous one
     // up to a maximum duration of MAX_RECONNECT_INTERVAL (10 minutes)
-    this._reconnectInterval >= MAX_RECONNECT_INTERVAL
-        ? this._reconnectInterval = MAX_RECONNECT_INTERVAL
-        : this._reconnectInterval = this._reconnectInterval * 2;
+    this._reconnectInterval = (this._reconnectInterval >= MAX_RECONNECT_INTERVAL)
+        ? MAX_RECONNECT_INTERVAL
+        : this._reconnectInterval * 2;
 
+    this.emit('reconnecting', this._reconnectInterval);
     setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
 };
 
