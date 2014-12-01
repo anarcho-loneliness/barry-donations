@@ -104,7 +104,7 @@ BarryDonations.prototype.validate = function() {
             self.emit('connected');
             self.init();
         } else {
-            self.emit('connectfail', new Error(util.format("Failed to validate (%d):", response.statusCode, error)));
+            self.emit('connectfail', new Error(util.format("Failed to validate (%d):", response.statusCode, error.message)));
             self.reconnect();
         }
     });
@@ -129,7 +129,7 @@ BarryDonations.prototype.init = function() {
             //fetch new data (delta) from the api every 300 seconds
             self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
         } else {
-            self.emit('connectfail', new Error('Failed to get initial data:', error));
+            self.emit('connectfail', new Error('Failed to get initial data:', error.message));
             self.reconnect();
         }
     });
@@ -144,7 +144,7 @@ BarryDonations.prototype.ping = function() {
 
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            self.emit('disconnected', new Error('Failed to keepalive:', error));
+            self.emit('disconnected', new Error('Failed to keepalive:', error.message));
             self.reconnect();
         }
     });
@@ -204,7 +204,7 @@ BarryDonations.prototype.logout = function() {
                 cache.remove(self.options.uesrname);
             }
         } else {
-            self.emit('error', new Error('Failed to logout:', error));
+            self.emit('error', new Error('Failed to logout:', error.message));
         }
     });
 };
