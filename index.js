@@ -1,3 +1,5 @@
+'use strict';
+
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
@@ -151,8 +153,7 @@ BarryDonations.prototype.ping = function() {
 };
 
 BarryDonations.prototype.reconnect = function() {
-    if (this.options.reconnect === false)
-        return;
+    if (this.options.reconnect === false) return;
 
     this._killtimer();
 
@@ -163,8 +164,11 @@ BarryDonations.prototype.reconnect = function() {
         : this._reconnectInterval * 2;
 
     this.emit('reconnecting', this._reconnectInterval);
-    setTimeout(this.validate.bind(this), this._reconnectInterval * 1000);
-};
+    var self = this;
+    setTimeout(function() {
+        try { self.validate.bind(self) }
+        catch(e) { self.emit('reconnectfail', new Error('Failed to reconnect:', e.message)) }
+    }, self._reconnectInterval * 1000);
 
 BarryDonations.prototype.resetCategory = function(category) {
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
