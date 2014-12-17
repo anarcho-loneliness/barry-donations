@@ -165,10 +165,15 @@ BarryDonations.prototype.reconnect = function() {
 
     this.emit('reconnecting', this._reconnectInterval);
     var self = this;
-    setTimeout(function() {
-        try { self.validate.bind(self) }
-        catch(e) { self.emit('reconnectfail', new Error('Failed to reconnect:', e.message)) }
+    setTimeout(function () {
+        try {
+            self.validate.bind(self)
+        }
+        catch (e) {
+            self.emit('reconnectfail', new Error('Failed to reconnect:', e.message))
+        }
     }, self._reconnectInterval * 1000);
+};
 
 BarryDonations.prototype.resetCategory = function(category) {
     var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
