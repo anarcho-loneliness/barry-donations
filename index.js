@@ -106,7 +106,7 @@ BarryDonations.prototype.validate = function() {
             self.emit('connected');
             self.init();
         } else {
-            self.emit('connectfail', new Error(util.format("Failed to validate (%d):", response.statusCode, error.message)));
+            self.emit('connectfail', new Error(util.format("Failed to validate:", error.message)));
             self.reconnect();
         }
     });
