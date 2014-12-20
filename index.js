@@ -150,8 +150,13 @@ BarryDonations.prototype.ping = function() {
 
     request(url, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            self.emit('disconnected', new Error('Failed to keepalive:', error.message));
-            self.reconnect();
+            if (error) {
+                self.emit('disconnected', new Error('Failed to keepalive:', error.message));
+                self.reconnect();
+            } else if (response.statusCode != 200) {
+                self.emit('disconnected', new Error('Failed to keepalive, response code %d', response.statusCode));
+                self.reconnect();
+            }
         }
     });
 };
