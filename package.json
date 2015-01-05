@@ -1,6 +1,6 @@
 {
   "name": "barry-donations",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "description": "Events-driven API for Barry's Donation Tracker (http://don.barrycarlyon.co.uk/)",
   "main": "index.js",
   "repository": {
