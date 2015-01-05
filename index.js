@@ -93,26 +93,26 @@ BarryDonations.prototype.validate = function() {
         '&endpoint=' + this._endpoint;
 
     request(url, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var bodyJSON = JSON.parse(body);
+        var estr = null;
+        if (error) estr = util.format("Failed to validate:", error.message);
+        else if (response.statusCode != 200) estr = util.format("Failed to validate, response code:", response.statusCode);
 
-            if (bodyJSON.status !== 'ok') {
-                self.emit('connectfail', new Error(util.format("Failed to validate, API returned status:", bodyJSON.status)));
-                return;
-            }
-
-            self.settings = bodyJSON.settings;
-            self._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
-            self.emit('connected');
-            self.init();
-        } else {
-            var estr = '';
-            if (error && response) estr = util.format("Failed to validate (%d):", response.statusCode, error.message);
-            else if (error) estr = util.format("Failed to validate:", error.message);
-            else if (response) estr = util.format("Failed to validate, response code:", response.statusCode);
+        if (estr) {
             self.emit('connectfail', new Error(estr));
             self.reconnect();
+            return;
         }
+
+        var bodyJSON = JSON.parse(body);
+        if (bodyJSON.status !== 'ok') {
+            self.emit('connectfail', new Error(util.format("Failed to validate, API returned status:", bodyJSON.status)));
+            return;
+        }
+
+        self.settings = bodyJSON.settings;
+        self._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
+        self.emit('connected');
+        self.init();
     });
 };
 
@@ -125,19 +125,24 @@ BarryDonations.prototype.init = function() {
         '&version=' + this._version;
 
     request(url, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var bodyJSON = JSON.parse(body);
-            self.emit('initialized', bodyJSON.data);
+        var estr = null;
+        if (error) estr = util.format("Failed to get initial data:", error.message);
+        else if (response.statusCode != 200) estr = util.format("Failed to get initial data, response code:", response.statusCode);
 
-            //kill any existing ping timers
-            self._killtimer();
-
-            //fetch new data (delta) from the api every 300 seconds
-            self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
-        } else {
-            self.emit('connectfail', new Error('Failed to get initial data:', error.message));
+        if (estr) {
+            self.emit('connectfail', new Error(estr));
             self.reconnect();
+            return;
         }
+
+        var bodyJSON = JSON.parse(body);
+        self.emit('initialized', bodyJSON.data);
+
+        //kill any existing ping timers
+        self._killtimer();
+
+        //fetch new data (delta) from the api every 300 seconds
+        self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
     });
 };
 
@@ -149,14 +154,14 @@ BarryDonations.prototype.ping = function() {
         '&version=' + this._version;
 
     request(url, function (error, response, body) {
-        if (error || response.statusCode != 200) {
-            if (error) {
-                self.emit('disconnected', new Error('Failed to keepalive:', error.message));
-                self.reconnect();
-            } else if (response.statusCode != 200) {
-                self.emit('disconnected', new Error('Failed to keepalive, response code %d', response.statusCode));
-                self.reconnect();
-            }
+        var estr = null;
+        if (error) estr = util.format("Failed to keepalive:", error.message);
+        else if (response.statusCode != 200) estr = util.format("Failed to keepalive, response code:", response.statusCode);
+
+        if (estr) {
+            self.emit('disconnected', new Error(estr));
+            self.reconnect();
+            return;
         }
     });
 };
@@ -177,8 +182,7 @@ BarryDonations.prototype.reconnect = function() {
     setTimeout(function () {
         try {
             self.validate.bind(self)
-        }
-        catch (e) {
+        } catch (e) {
             self.emit('reconnectfail', new Error('Failed to reconnect:', e.message))
         }
     }, self._reconnectInterval * 1000);
