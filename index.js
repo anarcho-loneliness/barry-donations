@@ -160,7 +160,11 @@ BarryDonations.prototype.ping = function() {
 
         if (estr) {
             self.emit('disconnected', new Error(estr));
-            self.reconnect();
+            try {
+                self.reconnect();
+            } catch (e) {
+                self.emit('reconnectfail', new Error('Failed to reconnect:', e.message))
+            }
             return;
         }
     });
@@ -181,9 +185,9 @@ BarryDonations.prototype.reconnect = function() {
     var self = this;
     setTimeout(function () {
         try {
-            self.validate.bind(self)
+            self.validate.bind(self);
         } catch (e) {
-            self.emit('reconnectfail', new Error('Failed to reconnect:', e.message))
+            self.emit('reconnectfail', new Error('Failed to reconnect:', e.message));
         }
     }, self._reconnectInterval * 1000);
 };
