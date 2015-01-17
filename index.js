@@ -59,7 +59,7 @@ function BarryDonations(options) {
         app.listen(port);
 
         app.get('/bd', function(req, res) {
-            if (req.param('method') === 'ping') {
+            if (req.query.method === 'ping') {
                 res.status(200).send('pong');
             } else {
                 res.status(400).send('Bad request');
