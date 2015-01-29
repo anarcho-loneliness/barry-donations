@@ -68,7 +68,7 @@ function BarryDonations(options) {
 
         app.post('/bd', function(req, res) {
             var data = req.body.data;
-            if (req.param('method') === 'donation') {
+            if (req.query.method === 'donation') {
                 if (data) self.emit('newdonations', data);
             } else {
                 res.status(400).send('Bad request');
