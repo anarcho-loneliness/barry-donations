@@ -7,22 +7,21 @@ easier for Twitch broadcasters.
 npm install barry-donations
 ```
 
-### Usage
+### Example Usage
 ```javascript
 var BarryDonations = require('barry-donations');
 
-// Barry's API pushes new donations to an endpoint located at 'hostname'
+// New donations will be received via a REST endpoint
 // barry-donations takes care of making and listening to the endpoint, but you must supply the hostname
-var options = {
+var bd = new BarryDonations({
     username: 'user',
     password: 'pass',
-    hostname: 'yourserver.com', // don't add "http://", https currently unsupported
+    hostname: 'yourserver.com', // don't add "http://" prefix. https currently unsupported
     port: 1234,                 // optional, will use a random port if not supplied
     reconnect: true             // optional, attempt to automatically reconnect when disconnected. defaults to true.
-};
-var bd = new BarryDonations(options);
+});
 
-bd.on('connected', function (e) {
+bd.on('connected', function () {
     console.log('connected');
 });
 
@@ -45,6 +44,7 @@ bd.on('reconnecting', function (timerDuration) {
 bd.on('initialized', function (data) {
     console.log("[init]" + data);
 });
+
 bd.on('newdonations', function (data) {
     console.log("[newdonations] " + data);
 });
