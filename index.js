@@ -86,9 +86,8 @@ function BarryDonations(options) {
         // that options will be just the defaults.
         if (typeof(cb) === 'undefined') {
             cb = options;
+            options = {};
         }
-
-        options = options || {};
 
         // Add default options
         options.version = this._version;
