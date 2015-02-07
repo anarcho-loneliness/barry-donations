@@ -2,6 +2,8 @@
 An evented API wrapper for [Barry's Donation Tracker](http://don.barrycarlyon.co.uk/), a service that makes tracking donations 
 easier for Twitch broadcasters.
 
+[![Build Status](https://travis-ci.org/Lange/barry-donations.svg?branch=master)](https://travis-ci.org/Lange/barry-donations)
+
 ### Installation
 ```
 npm install barry-donations
