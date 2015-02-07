@@ -107,7 +107,7 @@ function BarryDonations(options) {
             if (error) {
                 cb(error);
             } else if (response.statusCode !== 200) {
-                cb(new Error('Status code was not "200": ' + response.statusCode));
+                cb(new Error('Status code for "'+method+'" was not "200": ' + response.statusCode));
             } else {
                 cb(null, JSON.parse(body));
             }
