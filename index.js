@@ -149,6 +149,11 @@ BarryDonations.prototype.init = function() {
             return;
         }
 
+        if (data.status !== 'ok') {
+            self.emit('connectfail', new Error('Failed to get initial data, API returned status:', data.status));
+            return;
+        }
+
         self.emit('initialized', data);
 
         // Kill existing ping timer (if any)
