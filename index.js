@@ -9,7 +9,8 @@ var express = require('express'),
     Q = require('q'),
     EventEmitter = require('events').EventEmitter,
     cache = require('./lib/cache'),
-    pjson = require('./package.json');
+    pjson = require('./package.json'),
+    querystring = require('querystring');
 
 var MAX_RECONNECT_INTERVAL = 600;
 var INITIAL_RECONNECT_INTERVAL = 2;
@@ -79,6 +80,39 @@ function BarryDonations(options) {
 
         self.validate();
     }
+
+    this._apiCall = function (method, options, cb) {
+        // If only two params were provided, assume second param is the callback and
+        // that options will be just the defaults.
+        if (typeof(cb) === 'undefined') {
+            cb = options;
+        }
+
+        options = options || {};
+
+        // Add default options
+        options.version = this.options._version;
+        options.username = this.options.username;
+        options.password = this.options.password;
+
+        // Turn query options into a query string
+        options = querystring.stringify(options);
+
+        // Combine everything into a URL for the desired API call
+        var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=' + method +
+            (options ? '?' + options : '');
+
+        // Execute the request
+        request(url, function (error, response, body) {
+            if (error) {
+                cb(error);
+            } else if (response.statusCode !== 200) {
+                cb(new Error('Status code was not "200": ' + response.statusCode));
+            } else {
+                cb(null, JSON.parse(body));
+            }
+        });
+    };
 }
 
 util.inherits(BarryDonations, EventEmitter);
@@ -86,30 +120,19 @@ util.inherits(BarryDonations, EventEmitter);
 BarryDonations.prototype.validate = function() {
     var self = this;
 
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=validate' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&version=' + this._version +
-        '&endpoint=' + this._endpoint;
-
-    request(url, function (error, response, body) {
-        var estr = null;
-        if (error) estr = util.format("Failed to validate:", error.message);
-        else if (response.statusCode != 200) estr = util.format("Failed to validate, response code:", response.statusCode);
-
-        if (estr) {
-            self.emit('connectfail', new Error(estr));
+    this._apiCall('validate', { endpoint: this._endpoint }, function(err, data) {
+        if (err) {
+            self.emit('connectfail', err);
             self.reconnect();
             return;
         }
 
-        var bodyJSON = JSON.parse(body);
-        if (bodyJSON.status !== 'ok') {
-            self.emit('connectfail', new Error(util.format("Failed to validate, API returned status:", bodyJSON.status)));
+        if (data.status !== 'ok') {
+            self.emit('connectfail', new Error('Failed to validate, API returned status:', data.status));
             return;
         }
 
-        self.settings = bodyJSON.settings;
+        self.settings = data.settings;
         self._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
         self.emit('connected');
         self.init();
@@ -119,53 +142,30 @@ BarryDonations.prototype.validate = function() {
 BarryDonations.prototype.init = function() {
     var self = this;
 
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=initial' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&version=' + this._version;
-
-    request(url, function (error, response, body) {
-        var estr = null;
-        if (error) estr = util.format("Failed to get initial data:", error.message);
-        else if (response.statusCode != 200) estr = util.format("Failed to get initial data, response code:", response.statusCode);
-
-        if (estr) {
-            self.emit('connectfail', new Error(estr));
+    this._apiCall('initial', function(err, data) {
+        if (err) {
+            self.emit('connectfail', err);
             self.reconnect();
             return;
         }
 
-        var bodyJSON = JSON.parse(body);
-        self.emit('initialized', bodyJSON.data);
+        self.emit('initialized', data);
 
-        //kill any existing ping timers
-        self._killtimer();
+        // Kill existing ping timer (if any)
+        clearInterval(self._pingtimer);
 
-        //fetch new data (delta) from the api every 300 seconds
+        // Send a keepalive to Barry's server every 5 minutes
         self._pingtimer = setInterval(self.ping.bind(self), 300 * 1000);
     });
 };
 
 BarryDonations.prototype.ping = function() {
     var self = this;
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=ping' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&version=' + this._version;
 
-    request(url, function (error, response, body) {
-        var estr = null;
-        if (error) estr = util.format("Failed to keepalive:", error.message);
-        else if (response.statusCode != 200) estr = util.format("Failed to keepalive, response code:", response.statusCode);
-
-        if (estr) {
-            self.emit('disconnected', new Error(estr));
-            try {
-                self.reconnect();
-            } catch (e) {
-                self.emit('reconnectfail', new Error('Failed to reconnect:', e.message))
-            }
-            return;
+    this._apiCall('ping', function(err) {
+        if (err) {
+            self.emit('disconnected', new Error('Failed to keepalive: ' + err.message));
+            self.reconnect();
         }
     });
 };
@@ -173,7 +173,7 @@ BarryDonations.prototype.ping = function() {
 BarryDonations.prototype.reconnect = function() {
     if (this.options.reconnect === false) return;
 
-    this._killtimer();
+    clearInterval(this._pingtimer);
 
     // To avoid hammering Barry's API, each reconnect attempt will wait twice as long as the previous one
     // up to a maximum duration of MAX_RECONNECT_INTERVAL (10 minutes)
@@ -184,63 +184,44 @@ BarryDonations.prototype.reconnect = function() {
     this.emit('reconnecting', this._reconnectInterval);
     var self = this;
     setTimeout(function () {
-        try {
-            self.validate.bind(self);
-        } catch (e) {
-            self.emit('reconnectfail', new Error('Failed to reconnect:', e.message));
-        }
+        // Run validate() with the appropriate 'this' context
+        self.validate.call(self);
     }, self._reconnectInterval * 1000);
 };
 
 BarryDonations.prototype.resetCategory = function(category) {
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=reset' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&reset=' + category;
-
     var deferred = Q.defer();
-    request(url, function (error, response, body) {
-        if (!error && response.statusCode === 200) {
-            var bodyJSON = JSON.parse(body);
-            bodyJSON.status === 'ok'
-                ? deferred.resolve(category)
-                : deferred.reject(new Error('Failed to reset %s:', category, bodyJSON.status));
+    this._apiCall('reset', function(err, data) {
+        if (err) {
+            deferred.reject('error', new Error('Failed to reset: ' + err.message));
+            return;
+        }
+
+        if (data.status !== 'ok') {
+            deferred.reject('error', new Error('Failed to reset ' + category + ': ' + data.status));
         } else {
-            deferred.reject(new Error('Failed to reset', category));
+            deferred.resolve(category);
         }
     });
     return deferred.promise;
 };
 
 BarryDonations.prototype.logout = function() {
-    this._killtimer();
+    clearInterval(this._pingtimer);
     var self = this;
 
-    var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=logout' +
-        '&username=' + this.options.username +
-        '&password=' + this.options.password +
-        '&version=' + this.options.version;
+    this._apiCall('logout', function(err, data) {
+        if (err) {
+            self.emit('error', new Error('Failed to logout: ' + err.message));
+            return;
+        }
 
-    request(url, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var bodyJSON = JSON.parse(body);
-
-            if (bodyJSON.status !== 'ok') {
-                self.emit('error', new Error('Failed to logout, API returned status:', bodyJSON.status));
-            } else {
-                cache.remove(self.options.uesrname);
-            }
+        if (data.status !== 'ok') {
+            self.emit('error', new Error('Failed to logout, API returned status: ' + data.status));
         } else {
-            self.emit('error', new Error('Failed to logout:', error.message));
+            cache.remove(self.options.username);
         }
     });
-};
-
-BarryDonations.prototype._killtimer = function() {
-    if(this._pingtimer !== null) {
-        clearInterval(this._pingtimer);
-        this._pingtimer = null;
-    }
 };
 
 module.exports = BarryDonations;
