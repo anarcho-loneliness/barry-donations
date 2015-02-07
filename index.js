@@ -91,7 +91,7 @@ function BarryDonations(options) {
         options = options || {};
 
         // Add default options
-        options.version = this.options._version;
+        options.version = this._version;
         options.username = this.options.username;
         options.password = this.options.password;
 
@@ -100,7 +100,7 @@ function BarryDonations(options) {
 
         // Combine everything into a URL for the desired API call
         var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=' + method +
-            (options ? '?' + options : '');
+            (options ? '&' + options : '');
 
         // Execute the request
         request(url, function (error, response, body) {
