@@ -153,7 +153,7 @@ BarryDonations.prototype.init = function() {
             return;
         }
 
-        self.emit('initialized', data);
+        self.emit('initialized', data.data);
 
         // Kill existing ping timer (if any)
         clearInterval(self._pingtimer);
