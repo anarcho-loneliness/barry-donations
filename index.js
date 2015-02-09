@@ -195,7 +195,7 @@ BarryDonations.prototype.reconnect = function() {
 
 BarryDonations.prototype.resetCategory = function(category) {
     var deferred = Q.defer();
-    this._apiCall('reset', { category: category}, function(err, data) {
+    this._apiCall('reset', { reset: category }, function(err, data) {
         if (err) {
             deferred.reject(err);
             return;
