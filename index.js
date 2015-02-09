@@ -195,14 +195,14 @@ BarryDonations.prototype.reconnect = function() {
 
 BarryDonations.prototype.resetCategory = function(category) {
     var deferred = Q.defer();
-    this._apiCall('reset', function(err, data) {
+    this._apiCall('reset', { category: category}, function(err, data) {
         if (err) {
-            deferred.reject('error', new Error('Failed to reset: ' + err.message));
+            deferred.reject(err);
             return;
         }
 
         if (data.status !== 'ok') {
-            deferred.reject('error', new Error('Failed to reset ' + category + ': ' + data.status));
+            deferred.reject(new Error(data.status));
         } else {
             deferred.resolve(category);
         }
