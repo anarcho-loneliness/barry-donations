@@ -71,6 +71,7 @@ function BarryDonations(options) {
             var data = req.body.data;
             if (req.query.method === 'donation') {
                 if (data) self.emit('newdonations', data);
+                res.status(200).send('OK');
             } else {
                 res.status(400).send('Bad request');
             }
