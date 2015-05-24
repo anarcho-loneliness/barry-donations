@@ -18,9 +18,9 @@ var BarryDonations = require('barry-donations');
 var bd = new BarryDonations({
     username: 'user',
     password: 'pass',
-    hostname: 'yourserver.com', // don't add "http://" prefix. https currently unsupported
-    port: 1234,                 // optional, will use a random port if not supplied
-    reconnect: true             // optional, attempt to automatically reconnect when disconnected. defaults to true.
+    hostname: 'http://yourserver.com',
+    port: 1234,     // optional, will use a random port if not supplied
+    reconnect: true // optional, attempt to automatically reconnect when disconnected. defaults to true.
 });
 
 bd.on('connected', function () {

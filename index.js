@@ -77,7 +77,7 @@ function BarryDonations(options) {
             }
         });
 
-        self._endpoint = 'http://' + self.options.hostname + ':' + port + '/bd';
+        self._endpoint = self.options.hostname + ':' + port + '/bd';
 
         self.validate();
     }
