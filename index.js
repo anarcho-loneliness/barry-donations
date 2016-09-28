@@ -129,6 +129,7 @@ BarryDonations.prototype.validate = function() {
 
         if (data.status !== 'ok') {
             self.emit('connectfail', new Error('Failed to validate, API returned status:' + data.status));
+            self.reconnect();
             return;
         }
 
