@@ -43,8 +43,44 @@ function BarryDonations(options) {
     this._pingtimer = null;
     this._reconnectInterval = INITIAL_RECONNECT_INTERVAL;
 
+    if (this.options.port) {
+        this.port = this.options.port;
+    }
+
     var self = this;
     cache.add(this);
+
+    this._apiCall = function (method, options, cb) {
+        // If only two params were provided, assume second param is the callback and
+        // that options will be just the defaults.
+        if (typeof(cb) === 'undefined') {
+            cb = options;
+            options = {};
+        }
+
+        // Add default options
+        options.version = this._version;
+        options.username = this.options.username;
+        options.password = this.options.password;
+
+        // Turn query options into a query string
+        options = querystring.stringify(options);
+
+        // Combine everything into a URL for the desired API call
+        var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=' + method +
+            (options ? '&' + options : '');
+
+        // Execute the request
+        request(url, function (error, response, body) {
+            if (error) {
+                cb(error);
+            } else if (response.statusCode !== 200) {
+                cb(new Error('Status code for "'+method+'" was not "200": ' + response.statusCode));
+            } else {
+                cb(null, JSON.parse(body));
+            }
+        });
+    };
 
     // If a port was provided, use that
     // Otherwise, find a random open one
@@ -81,38 +117,6 @@ function BarryDonations(options) {
 
         self.validate();
     }
-
-    this._apiCall = function (method, options, cb) {
-        // If only two params were provided, assume second param is the callback and
-        // that options will be just the defaults.
-        if (typeof(cb) === 'undefined') {
-            cb = options;
-            options = {};
-        }
-
-        // Add default options
-        options.version = this._version;
-        options.username = this.options.username;
-        options.password = this.options.password;
-
-        // Turn query options into a query string
-        options = querystring.stringify(options);
-
-        // Combine everything into a URL for the desired API call
-        var url = 'http://don.barrycarlyon.co.uk/nodecg.php?method=' + method +
-            (options ? '&' + options : '');
-
-        // Execute the request
-        request(url, function (error, response, body) {
-            if (error) {
-                cb(error);
-            } else if (response.statusCode !== 200) {
-                cb(new Error('Status code for "'+method+'" was not "200": ' + response.statusCode));
-            } else {
-                cb(null, JSON.parse(body));
-            }
-        });
-    };
 }
 
 util.inherits(BarryDonations, EventEmitter);
